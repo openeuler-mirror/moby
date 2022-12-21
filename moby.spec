@@ -7,7 +7,7 @@
 
 Name: 	  docker 
 Version:  20.10.21
-Release:  1
+Release:  2
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -21,6 +21,8 @@ Source2:  tini-0.19.0.tar.gz
 Source3:  libnetwork-dcdf8f17.tar.gz
 Source4:  docker.service
 Source5:  docker.socket
+
+Patch0001: 0001-revert-any-to-interface-temporarily-allow-builtable.patch
 
 Requires: %{name}-engine = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
@@ -194,5 +196,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
-* Thu 14 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-1
+* Wed Dec 21 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-2
+- DESC: revert any to interface{} temporarily to allow builtable with golang-1.17.x
+-       it will be withdrawed if golang upgrade to 1.18.x in the branch
+
+* Thu Dec 14 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-1
 - DESC: initial docker-20.10.21-1
