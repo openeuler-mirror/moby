@@ -7,7 +7,7 @@
 
 Name: 	  docker 
 Version:  20.10.21
-Release:  2
+Release:  3
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -47,7 +47,7 @@ Requires: libseccomp >= 2.3
 Requires: systemd
 Requires: iptables
 Requires: libcgroup
-Requires: containerd >= 1.4.1
+Requires: containerd
 Requires: tar
 Requires: xz
 
@@ -70,7 +70,7 @@ BuildRequires: selinux-policy-devel
 BuildRequires: systemd-devel
 BuildRequires: tar
 BuildRequires: which
-BuildRequires: golang  >= 1.18
+BuildRequires: golang  >= 1.17.3
 
 %description engine
 Docker daemon binary and related utilities
@@ -87,6 +87,7 @@ Docker client binary and related utilities
 %prep
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
+%patch0001 -p1
 %setup -q -T -n %{_source_docker_init} -b 2
 %setup -q -T -n %{_source_docker_proxy} -b 3
 
@@ -196,6 +197,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Wed Dec 28 2022 xulei<xulei@xfusion.com> - 20.10.21-3
+- DESC: change to BuildRequires golang-1.17.3
+
 * Wed Dec 21 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-2
 - DESC: revert any to interface{} temporarily to allow builtable with golang-1.17.x
 -       it will be withdrawed if golang upgrade to 1.18.x in the branch
