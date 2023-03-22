@@ -7,7 +7,7 @@
 
 Name: 	  docker 
 Version:  20.10.21
-Release:  3
+Release:  4
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -21,8 +21,8 @@ Source2:  tini-0.19.0.tar.gz
 Source3:  libnetwork-dcdf8f17.tar.gz
 Source4:  docker.service
 Source5:  docker.socket
+Source6:  docker.sysconfig
 
-Patch0001: 0001-revert-any-to-interface-temporarily-allow-builtable.patch
 
 Requires: %{name}-engine = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
@@ -70,7 +70,7 @@ BuildRequires: selinux-policy-devel
 BuildRequires: systemd-devel
 BuildRequires: tar
 BuildRequires: which
-BuildRequires: golang  >= 1.17.3
+BuildRequires: golang  >= 1.18.0
 
 %description engine
 Docker daemon binary and related utilities
@@ -87,7 +87,6 @@ Docker client binary and related utilities
 %prep
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
-%patch0001 -p1
 %setup -q -T -n %{_source_docker_init} -b 2
 %setup -q -T -n %{_source_docker_proxy} -b 3
 
@@ -152,6 +151,9 @@ install -D -p -m 755 %{_builddir}/%{_source_docker_init}/tini-static %{buildroot
 install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/docker.service
 install -D -m 0644 %{SOURCE5} %{buildroot}%{_unitdir}/docker.socket
 
+# for additional args
+install -Dpm 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig/docker
+
 # install docker client
 install -p -m 0755 $(readlink -f %{_builddir}/%{_source_client}/build/docker) %{buildroot}%{_bindir}/docker
 
@@ -171,6 +173,7 @@ install -p -m 644 %{_builddir}/%{_source_client}/{LICENSE,MAINTAINERS,NOTICE,REA
 # empty as it depends on engine and client
 
 %files engine
+%config(noreplace) %{_sysconfdir}/sysconfig/docker
 %{_bindir}/dockerd
 %{_bindir}/docker-proxy
 %{_bindir}/docker-init
@@ -191,12 +194,20 @@ if ! getent group docker > /dev/null; then
 fi
 
 %preun
-%systemd_preun docker.service
+%systemd_preun docker.service docker.socket
 
 %postun
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Wed Mar 8 2023 xulei<xulei@xfusion.com> - 20.10.21-4
+- DESC: enhance container behavior
+        1.stop docker.socket before uninstall docker.
+        2.container keep running when restart docker service.
+        3.when containerd exits abnormally, it can be automatically pulled up.
+        4.add some dockerd options.
+        5.change to BuildRequires golang-1.18.0
+
 * Wed Dec 28 2022 xulei<xulei@xfusion.com> - 20.10.21-3
 - DESC: change to BuildRequires golang-1.17.3
 
