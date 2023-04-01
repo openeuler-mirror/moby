@@ -7,7 +7,7 @@
 
 Name: 	  docker 
 Version:  20.10.23
-Release:  1
+Release:  2
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -22,6 +22,9 @@ Source3:  libnetwork-dcdf8f17.tar.gz
 Source4:  docker.service
 Source5:  docker.socket
 Source6:  docker.sysconfig
+Source7:  apply-patches
+Source8:  series.conf
+Source9:  patch.tar.gz
 
 
 Requires: %{name}-engine = %{version}-%{release}
@@ -89,6 +92,13 @@ Docker client binary and related utilities
 %setup -q -T -n %{_source_engine} -b 1
 %setup -q -T -n %{_source_docker_init} -b 2
 %setup -q -T -n %{_source_docker_proxy} -b 3
+
+cd %{_builddir}
+cp %{SOURCE7} .
+cp %{SOURCE8} .
+cp %{SOURCE9} .
+
+sh ./apply-patches
 
 %build
 export GO111MODULE=off
@@ -200,6 +210,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Fri Mar 31 2023 zhangzhihui<zhangzhihui@xfusion.com> - 20.10.23-2
+- DESC: sync upstream patch to update containerd to v1.6.16
+
 * Wed Mar 29 2023 xulei<xulei@xfusion.com> - 20.10.23-1
 - DESC:update to 20.10.23
 
