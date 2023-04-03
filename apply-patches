@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Description: This shell script is used to apply patches for the project
+# Author: zhangzhihui@xfusion.com
+# Create: 2023-03-27
+
+set -ex
+
+pkg=moby-20.10.23
+cwd=$PWD
+src=$cwd/$pkg
+
+if [ ! -d patch ];then
+  tar -xzf patch.tar.gz
+fi
+
+cd $src
+git init
+git add .
+git config user.name 'build'
+git config user.email 'build@obs.com'
+git commit -m "init build"
+cd $cwd
+
+series=$cwd/series.conf
+while IPF=read -r line
+do
+  if [[ "$line" =~ ^patch* ]];then
+    echo git apply $cwd/$line
+    cd $src && git apply $cwd/$line
+  fi
+done < "$series"
+
+mv $src/.git $src/git
