@@ -1,0 +1,36 @@
+From 0312e468da5c99267654d5c6b62785e29ffe6e0d Mon Sep 17 00:00:00 2001
+From: Sebastiaan van Stijn <github@gone.nl>
+Date: Mon, 6 Feb 2023 15:22:09 +0100
+Subject: [PATCH] Dockerfile: configure code dir as "safe" directory
+
+CI is failing when bind-mounting source from the host into the dev-container;
+
+    fatal: detected dubious ownership in repository at '/go/src/github.com/docker/docker'
+    To add an exception for this directory, call:
+
+        git config --global --add safe.directory /go/src/github.com/docker/docker
+
+Signed-off-by: Sebastiaan van Stijn <github@gone.nl>
+(cherry picked from commit 21677816a01057bc7c645da8429314d44324ddea)
+Signed-off-by: Sebastiaan van Stijn <github@gone.nl>
+---
+ Dockerfile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Dockerfile b/Dockerfile
+index 481c9e288b..96d6393ed7 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -267,6 +267,9 @@ RUN ln -sfv /go/src/github.com/docker/docker/.bashrc ~/.bashrc
+ RUN echo "source /usr/share/bash-completion/bash_completion" >> /etc/bash.bashrc
+ RUN ln -s /usr/local/completion/bash/docker /etc/bash_completion.d/docker
+ RUN ldconfig
++# Set dev environment as safe git directory to prevent "dubious ownership" errors
++# when bind-mounting the source into the dev-container. See https://github.com/moby/moby/pull/44930
++RUN git config --global --add safe.directory $GOPATH/src/github.com/docker/docker
+ # This should only install packages that are specifically needed for the dev environment and nothing else
+ # Do you really need to add another package here? Can it be done in a different build stage?
+ RUN --mount=type=cache,sharing=locked,id=moby-dev-aptlib,target=/var/lib/apt \
+-- 
+2.37.1
+
