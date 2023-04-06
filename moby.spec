@@ -7,7 +7,7 @@
 
 Name: 	  docker 
 Version:  20.10.23
-Release:  2
+Release:  3
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -210,6 +210,10 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Tue Apr 4 2023 zhangzhihui<zhangzhihui@xfusion.com> - 20.10.23-3
+- DESC: sync upstream patch
+        Dockerfile: configure code dir as "safe" directory
+
 * Fri Mar 31 2023 zhangzhihui<zhangzhihui@xfusion.com> - 20.10.23-2
 - DESC: sync upstream patch to update containerd to v1.6.16
 
