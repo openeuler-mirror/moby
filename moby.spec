@@ -1,19 +1,19 @@
-%global _gitcommit_engine 6051f14
-%global _gitcommit_cli 7155243
+%global _gitcommit_engine 5d6db84
+%global _gitcommit_cli 297e128
 %global _source_engine moby-%{version}
 %global _source_client cli-%{version}
 %global _source_docker_init tini-0.19.0
 %global _source_docker_proxy libnetwork-dcdf8f17
 
 Name: 	  docker 
-Version:  20.10.23
-Release:  3
+Version:  20.10.24
+Release:  1
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
-# https://github.com/docker/cli/archive/refs/tags/v20.10.23.tar.gz
+# https://github.com/docker/cli/archive/refs/tags/v20.10.24.tar.gz
 Source0:  cli-%{version}.tar.gz
-# https://github.com/moby/moby/archive/refs/tags/v20.10.23.tar.gz
+# https://github.com/moby/moby/archive/refs/tags/v20.10.24.tar.gz
 Source1:  moby-%{version}.tar.gz
 # https://github.com/krallin/tini/archive/refs/tags/v0.19.0.tar.gz
 Source2:  tini-0.19.0.tar.gz
@@ -210,6 +210,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Mon Apr 10 2023 xulei<xulei@xfusion.com> - 20.10.24-1
+- DESC: update to 20.10.24
+
 * Tue Apr 4 2023 zhangzhihui<zhangzhihui@xfusion.com> - 20.10.23-3
 - DESC: sync upstream patch
         Dockerfile: configure code dir as "safe" directory
