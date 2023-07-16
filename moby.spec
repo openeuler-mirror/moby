@@ -5,9 +5,9 @@
 %global _source_docker_init tini-0.19.0
 %global _source_docker_proxy libnetwork-dcdf8f17
 
-Name: 	  docker 
+Name: 	  moby
 Version:  20.10.24
-Release:  1
+Release:  2
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -210,6 +210,10 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Sun Jul 16 2023 xulei<xulei@xfusion.com> - 20.10.24-2
+- DESC: fix non-blocking awslogs log drop bug
+        fix panic if mount is not a volume
+
 * Mon Apr 10 2023 xulei<xulei@xfusion.com> - 20.10.24-1
 - DESC: update to 20.10.24
 
