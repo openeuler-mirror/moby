@@ -1,0 +1,81 @@
+From 44152f6fb66da0ade1aa226f0b66ebbaa43d54b1 Mon Sep 17 00:00:00 2001
+From: Sebastiaan van Stijn <github@gone.nl>
+Date: Fri, 7 Jul 2023 14:54:04 +0200
+Subject: [PATCH 478/483] daemon: daemon.prepareMountPoints(): fix panic if
+ mount is not a volume
+
+The daemon.lazyInitializeVolume() function only handles restoring Volumes
+if a Driver is specified. The Container's MountPoints field may also
+contain other kind of mounts (e.g., bind-mounts). Those were ignored, and
+don't return an error; https://github.com/moby/moby/blob/1d9c8619cded4657af1529779c5771127e8ad0e7/daemon/volumes.go#L243-L252C2
+
+However, the prepareMountPoints() assumed each MountPoint was a volume,
+and logged an informational message about the volume being restored;
+https://github.com/moby/moby/blob/1d9c8619cded4657af1529779c5771127e8ad0e7/daemon/mounts.go#L18-L25
+
+This would panic if the MountPoint was not a volume;
+
+    github.com/docker/docker/daemon.(*Daemon).prepareMountPoints(0xc00054b7b8?, 0xc0007c2500)
+            /root/rpmbuild/BUILD/src/engine/.gopath/src/github.com/docker/docker/daemon/mounts.go:24 +0x1c0
+    github.com/docker/docker/daemon.(*Daemon).restore.func5(0xc0007c2500, 0x0?)
+            /root/rpmbuild/BUILD/src/engine/.gopath/src/github.com/docker/docker/daemon/daemon.go:552 +0x271
+    created by github.com/docker/docker/daemon.(*Daemon).restore
+            /root/rpmbuild/BUILD/src/engine/.gopath/src/github.com/docker/docker/daemon/daemon.go:530 +0x8d8
+    panic: runtime error: invalid memory address or nil pointer dereference
+    [signal SIGSEGV: segmentation violation code=0x1 addr=0x30 pc=0x564e9be4c7c0]
+
+This issue was introduced in 647c2a6cdd86d79230df1bf690d0b6a2930d6db2
+
+Signed-off-by: Sebastiaan van Stijn <github@gone.nl>
+(cherry picked from commit a490248f4d19164d78d3ef4f91cf142c3aad1790)
+Signed-off-by: Cory Snider <csnider@mirantis.com>
+---
+ daemon/mounts.go                  |  4 ++++
+ integration/daemon/daemon_test.go | 18 ++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/daemon/mounts.go b/daemon/mounts.go
+index 424e375037..3c79b0d447 100644
+--- a/daemon/mounts.go
++++ b/daemon/mounts.go
+@@ -17,6 +17,10 @@ func (daemon *Daemon) prepareMountPoints(container *container.Container) error {
+ 		if err := daemon.lazyInitializeVolume(container.ID, config); err != nil {
+ 			return err
+ 		}
++		if config.Volume == nil {
++			// FIXME(thaJeztah): should we check for config.Type here as well? (i.e., skip bind-mounts etc)
++			continue
++		}
+ 		if alive {
+ 			logrus.WithFields(logrus.Fields{
+ 				"container": container.ID,
+diff --git a/integration/daemon/daemon_test.go b/integration/daemon/daemon_test.go
+index 47dac3b762..416b19d2b5 100644
+--- a/integration/daemon/daemon_test.go
++++ b/integration/daemon/daemon_test.go
+@@ -102,4 +102,22 @@ func testLiveRestoreVolumeReferences(t *testing.T) {
+ 		err = c.VolumeRemove(ctx, v.Name, false)
+ 		assert.NilError(t, err)
+ 	})
++
++	// Make sure that we don't panic if the container has bind-mounts
++	// (which should not be "restored")
++	// Regression test for https://github.com/moby/moby/issues/45898
++	t.Run("container with bind-mounts", func(t *testing.T) {
++		m := mount.Mount{
++			Type:   mount.TypeBind,
++			Source: os.TempDir(),
++			Target: "/foo",
++		}
++		cID := container.Run(ctx, t, c, container.WithMount(m), container.WithCmd("top"))
++		defer c.ContainerRemove(ctx, cID, types.ContainerRemoveOptions{Force: true})
++
++		d.Restart(t, "--live-restore", "--iptables=false")
++
++		err := c.ContainerRemove(ctx, cID, types.ContainerRemoveOptions{Force: true})
++		assert.NilError(t, err)
++	})
+ }
+-- 
+2.32.0 (Apple Git-132)
+
