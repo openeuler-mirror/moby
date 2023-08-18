@@ -7,7 +7,7 @@
 
 Name: 	  moby
 Version:  20.10.24
-Release:  2
+Release:  3
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -210,6 +210,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Fri Aug 18 2023 jiangxinyu <jiangxinyu@kylinos.cn> - 20.10.24-3
+- Fix build error
+
 * Sun Jul 16 2023 xulei<xulei@xfusion.com> - 20.10.24-2
 - DESC: fix non-blocking awslogs log drop bug
         fix panic if mount is not a volume
@@ -242,5 +245,5 @@ fi
 - DESC: revert any to interface{} temporarily to allow builtable with golang-1.17.x
 -       it will be withdrawed if golang upgrade to 1.18.x in the branch
 
-* Thu Dec 14 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-1
+* Wed Dec 14 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-1
 - DESC: initial docker-20.10.21-1
