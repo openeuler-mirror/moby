@@ -3,11 +3,11 @@
 %global _source_engine moby-%{version}
 %global _source_client cli-%{version}
 %global _source_docker_init tini-0.19.0
-%global _source_docker_proxy libnetwork-dcdf8f17
+%define _debugsource_template %{nil}
 
 Name: 	  moby
 Version:  20.10.24
-Release:  2
+Release:  3
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -17,14 +17,12 @@ Source0:  cli-%{version}.tar.gz
 Source1:  moby-%{version}.tar.gz
 # https://github.com/krallin/tini/archive/refs/tags/v0.19.0.tar.gz
 Source2:  tini-0.19.0.tar.gz
-# https://github.com/moby/libnetwork @dcdf8f176d1e13ad719e913e796fb698d846de98
-Source3:  libnetwork-dcdf8f17.tar.gz
-Source4:  docker.service
-Source5:  docker.socket
-Source6:  docker.sysconfig
-Source7:  apply-patches
-Source8:  series.conf
-Source9:  patch.tar.gz
+Source3:  docker.service
+Source4:  docker.socket
+Source5:  docker.sysconfig
+Source6:  apply-patches
+Source7:  series.conf
+Source8:  patch.tar.gz
 
 
 Requires: %{name}-engine = %{version}-%{release}
@@ -74,6 +72,7 @@ BuildRequires: systemd-devel
 BuildRequires: tar
 BuildRequires: which
 BuildRequires: golang  >= 1.18.0
+BuildRequires: docker-proxy
 
 %description engine
 Docker daemon binary and related utilities
@@ -91,12 +90,11 @@ Docker client binary and related utilities
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
 %setup -q -T -n %{_source_docker_init} -b 2
-%setup -q -T -n %{_source_docker_proxy} -b 3
 
 cd %{_builddir}
+cp %{SOURCE6} .
 cp %{SOURCE7} .
 cp %{SOURCE8} .
-cp %{SOURCE9} .
 
 sh ./apply-patches
 
@@ -114,17 +112,6 @@ popd
 pushd %{_builddir}/%{_source_docker_init}
 cmake .
 make tini-static
-popd
-
-# build docker-proxy
-pushd %{_builddir}/%{_source_docker_proxy}
-mkdir -p .gopath/src/github.com/docker/libnetwork
-export GOPATH=`pwd`/.gopath
-rm -rf .gopath/src/github.com/docker/libnetwork
-ln -s %{_builddir}/%{_source_docker_proxy} .gopath/src/github.com/docker/libnetwork
-pushd .gopath/src/github.com/docker/libnetwork
-go build -buildmode=pie -ldflags=-linkmode=external -o docker-proxy github.com/docker/libnetwork/cmd/proxy
-popd
 popd
 
 # build cli
@@ -152,17 +139,17 @@ ver="$(%{_builddir}/%{_source_client}/build/docker --version)"; \
 install -D -p -m 0755 $(readlink -f %{_builddir}/%{_source_engine}/bundles/dynbinary-daemon/dockerd) %{buildroot}%{_bindir}/dockerd
 
 # install proxy
-install -D -p -m 0755 %{_builddir}/%{_source_docker_proxy}/docker-proxy %{buildroot}%{_bindir}/docker-proxy
+install -D -p -m 0755 /usr/bin/docker-proxy %{buildroot}%{_bindir}/docker-proxy
 
 # install tini
 install -D -p -m 755 %{_builddir}/%{_source_docker_init}/tini-static %{buildroot}%{_bindir}/docker-init
 
 # install systemd scripts
-install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/docker.service
-install -D -m 0644 %{SOURCE5} %{buildroot}%{_unitdir}/docker.socket
+install -D -m 0644 %{SOURCE3} %{buildroot}%{_unitdir}/docker.service
+install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/docker.socket
 
 # for additional args
-install -Dpm 644 %{SOURCE6} %{buildroot}%{_sysconfdir}/sysconfig/docker
+install -Dpm 644 %{SOURCE5} %{buildroot}%{_sysconfdir}/sysconfig/docker
 
 # install docker client
 install -p -m 0755 $(readlink -f %{_builddir}/%{_source_client}/build/docker) %{buildroot}%{_bindir}/docker
@@ -210,6 +197,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Mon Sep 4 2023 xulei<xulei@xfusion.com> - 20.10.24-3
+- Fix the conflict libnetwork installation
+
 * Sun Jul 16 2023 xulei<xulei@xfusion.com> - 20.10.24-2
 - DESC: fix non-blocking awslogs log drop bug
         fix panic if mount is not a volume
