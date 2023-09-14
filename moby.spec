@@ -44,7 +44,7 @@ Summary: Docker daemon binary and related utilities
 
 Requires: /usr/sbin/groupadd
 Requires: %{name}-client = %{version}-%{release}
-Requires: runc
+Requires: docker-runc
 Requires: container-selinux >= 2:2.74
 Requires: libseccomp >= 2.3
 Requires: systemd
