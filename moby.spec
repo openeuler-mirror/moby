@@ -7,7 +7,7 @@
 
 Name: 	  moby
 Version:  20.10.24
-Release:  4
+Release:  5
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -31,6 +31,7 @@ Requires: %{name}-client = %{version}-%{release}
 # conflicting packages
 Conflicts: docker-ce
 Conflicts: docker-io
+Conflicts: docker-engine
 Conflicts: docker-engine-cs
 Conflicts: docker-ee
 
@@ -42,7 +43,8 @@ lightweight container.
 Summary: Docker daemon binary and related utilities
 
 Requires: /usr/sbin/groupadd
-Requires: docker-client
+Requires: %{name}-client = %{version}-%{release}
+Requires: runc
 Requires: container-selinux >= 2:2.74
 Requires: libseccomp >= 2.3
 Requires: systemd
@@ -80,7 +82,8 @@ Docker daemon binary and related utilities
 %package client
 Summary: Docker client binary and related utilities
 
-Requires:      /bin/sh
+Requires: /bin/sh
+Requires: %{name}-engine = %{version}-%{release}
 BuildRequires: libtool-ltdl-devel
 
 %description client
@@ -197,6 +200,10 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Thu Sep 14 2023 xulei<xulei@xfusion.com> - 20.10.24-5
+- DESC: Fix missing runc dependencies
+        The declaration conflicts with the installation of docker-engine
+        
 * Mon Sep 4 2023 xulei<xulei@xfusion.com> - 20.10.24-4
 - Fix the conflict libnetwork installation
 
