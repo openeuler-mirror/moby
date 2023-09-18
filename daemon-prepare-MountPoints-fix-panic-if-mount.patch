@@ -31,14 +31,13 @@ Signed-off-by: Sebastiaan van Stijn <github@gone.nl>
 Signed-off-by: Cory Snider <csnider@mirantis.com>
 ---
  daemon/mounts.go                  |  4 ++++
- integration/daemon/daemon_test.go | 18 ++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ 1 files changed, 4 insertions(+)
 
 diff --git a/daemon/mounts.go b/daemon/mounts.go
 index 424e375037..3c79b0d447 100644
 --- a/daemon/mounts.go
 +++ b/daemon/mounts.go
-@@ -17,6 +17,10 @@ func (daemon *Daemon) prepareMountPoints(container *container.Container) error {
+@@ -15,6 +15,10 @@ func (daemon *Daemon) prepareMountPoints(container *container.Container) error {
  		if err := daemon.lazyInitializeVolume(container.ID, config); err != nil {
  			return err
  		}
@@ -46,36 +45,10 @@ index 424e375037..3c79b0d447 100644
 +			// FIXME(thaJeztah): should we check for config.Type here as well? (i.e., skip bind-mounts etc)
 +			continue
 +		}
- 		if alive {
- 			logrus.WithFields(logrus.Fields{
- 				"container": container.ID,
-diff --git a/integration/daemon/daemon_test.go b/integration/daemon/daemon_test.go
-index 47dac3b762..416b19d2b5 100644
---- a/integration/daemon/daemon_test.go
-+++ b/integration/daemon/daemon_test.go
-@@ -102,4 +102,22 @@ func testLiveRestoreVolumeReferences(t *testing.T) {
- 		err = c.VolumeRemove(ctx, v.Name, false)
- 		assert.NilError(t, err)
- 	})
-+
-+	// Make sure that we don't panic if the container has bind-mounts
-+	// (which should not be "restored")
-+	// Regression test for https://github.com/moby/moby/issues/45898
-+	t.Run("container with bind-mounts", func(t *testing.T) {
-+		m := mount.Mount{
-+			Type:   mount.TypeBind,
-+			Source: os.TempDir(),
-+			Target: "/foo",
-+		}
-+		cID := container.Run(ctx, t, c, container.WithMount(m), container.WithCmd("top"))
-+		defer c.ContainerRemove(ctx, cID, types.ContainerRemoveOptions{Force: true})
-+
-+		d.Restart(t, "--live-restore", "--iptables=false")
-+
-+		err := c.ContainerRemove(ctx, cID, types.ContainerRemoveOptions{Force: true})
-+		assert.NilError(t, err)
-+	})
+ 	}
+ 	return nil
  }
--- 
+--
 2.32.0 (Apple Git-132)
+
 
