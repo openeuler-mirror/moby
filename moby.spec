@@ -7,7 +7,7 @@
 
 Name: 	  moby
 Version:  20.10.24
-Release:  5
+Release:  6
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -20,9 +20,8 @@ Source2:  tini-0.19.0.tar.gz
 Source3:  docker.service
 Source4:  docker.socket
 Source5:  docker.sysconfig
-Source6:  apply-patches
-Source7:  series.conf
-Source8:  patch.tar.gz
+Patch0000:  awslogs-fix-non-blocking-log-drop-bug.patch
+Patch0001:  daemon-prepare-MountPoints-fix-panic-if-mount.patch
 
 
 Requires: %{name}-engine = %{version}-%{release}
@@ -92,14 +91,9 @@ Docker client binary and related utilities
 %prep
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
+%patch0000 -p1
+%patch0001 -p1
 %setup -q -T -n %{_source_docker_init} -b 2
-
-cd %{_builddir}
-cp %{SOURCE6} .
-cp %{SOURCE7} .
-cp %{SOURCE8} .
-
-sh ./apply-patches
 
 %build
 export GO111MODULE=off
@@ -200,6 +194,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Mon Sep 18 2023 xulei<xulei@xfusion.com> - 20.10.24-6
+- Optimize the apply patch method
+
 * Thu Sep 14 2023 xulei<xulei@xfusion.com> - 20.10.24-5
 - DESC: Fix missing runc dependencies
         The declaration conflicts with the installation of docker-engine
