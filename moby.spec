@@ -7,7 +7,7 @@
 
 Name: 	  moby
 Version:  20.10.24
-Release:  5
+Release:  6
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -42,6 +42,7 @@ lightweight container.
 Summary: Docker daemon binary and related utilities
 
 Requires: /usr/sbin/groupadd
+Requires: %{name} = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
 Requires: docker-runc
 Requires: container-selinux >= 2:2.74
@@ -194,6 +195,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Tue Sep 26 2023 xulei<xulei@xfusion.com> - 20.10.24-6
+- Fix the missing socketGroup permissions for only installing moby-engine
+
 * Mon Sep 18 2023 xulei<xulei@xfusion.com> - 20.10.24-5
 - Optimize the apply patch method
 
