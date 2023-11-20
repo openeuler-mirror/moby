@@ -1,16 +1,17 @@
 [Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network-online.target docker.socket firewalld.service containerd.service
+After=network-online.target docker.socket firewalld.service
 Wants=network-online.target
-Requires=docker.socket containerd.service
+Requires=docker.socket
 
 [Service]
 Type=notify
+EnvironmentFile=-/etc/sysconfig/docker
 # the default is not to use systemd for cgroups because the delegate issues still
 # exists and systemd currently does not support the cgroup feature set required
 # for containers run by docker
-ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+ExecStart=/usr/bin/dockerd -H fd:// $OPTIONS
 ExecReload=/bin/kill -s HUP $MAINPID
 TimeoutSec=0
 RestartSec=2
@@ -24,7 +25,7 @@ StartLimitBurst=3
 # Note that StartLimitInterval was renamed to StartLimitIntervalSec in systemd 230.
 # Both the old, and new name are accepted by systemd 230 and up, so using the old name to make
 # this option work for either version of systemd.
-StartLimitInterval=60s
+StartLimitInterval=5s
 
 # Having non-zero Limit*s causes performance problems due to accounting overhead
 # in the kernel. We recommend using cgroups to do container-local accounting.

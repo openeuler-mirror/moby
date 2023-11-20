@@ -1,28 +1,28 @@
-%global _gitcommit_engine a89b8422
-%global _gitcommit_cli 100c7018 
+%global _gitcommit_engine 5d6db84
+%global _gitcommit_cli 297e128
 %global _source_engine moby-%{version}
 %global _source_client cli-%{version}
 %global _source_docker_init tini-0.19.0
-%global _source_docker_proxy libnetwork-dcdf8f17
+%define _debugsource_template %{nil}
 
-Name: 	  docker 
-Version:  20.10.21
-Release:  3
+Name: 	  moby
+Version:  20.10.24
+Release:  1
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
-# https://github.com/docker/cli/archive/refs/tags/v20.10.21.tar.gz
+# https://github.com/docker/cli/archive/refs/tags/v20.10.24.tar.gz
 Source0:  cli-%{version}.tar.gz
-# https://github.com/moby/moby/archive/refs/tags/v20.10.21.tar.gz
+# https://github.com/moby/moby/archive/refs/tags/v20.10.24.tar.gz
 Source1:  moby-%{version}.tar.gz
 # https://github.com/krallin/tini/archive/refs/tags/v0.19.0.tar.gz
 Source2:  tini-0.19.0.tar.gz
-# https://github.com/moby/libnetwork @dcdf8f176d1e13ad719e913e796fb698d846de98
-Source3:  libnetwork-dcdf8f17.tar.gz
-Source4:  docker.service
-Source5:  docker.socket
+Source3:  docker.service
+Source4:  docker.socket
+Source5:  docker.sysconfig
+Patch0000:  awslogs-fix-non-blocking-log-drop-bug.patch
+Patch0001:  daemon-prepare-MountPoints-fix-panic-if-mount.patch
 
-Patch0001: 0001-revert-any-to-interface-temporarily-allow-builtable.patch
 
 Requires: %{name}-engine = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
@@ -30,6 +30,7 @@ Requires: %{name}-client = %{version}-%{release}
 # conflicting packages
 Conflicts: docker-ce
 Conflicts: docker-io
+Conflicts: docker-engine
 Conflicts: docker-engine-cs
 Conflicts: docker-ee
 
@@ -41,7 +42,9 @@ lightweight container.
 Summary: Docker daemon binary and related utilities
 
 Requires: /usr/sbin/groupadd
-Requires: docker-client
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-client = %{version}-%{release}
+Requires: docker-runc
 Requires: container-selinux >= 2:2.74
 Requires: libseccomp >= 2.3
 Requires: systemd
@@ -70,7 +73,8 @@ BuildRequires: selinux-policy-devel
 BuildRequires: systemd-devel
 BuildRequires: tar
 BuildRequires: which
-BuildRequires: golang  >= 1.17
+BuildRequires: golang  >= 1.17.0
+BuildRequires: docker-proxy
 
 %description engine
 Docker daemon binary and related utilities
@@ -78,7 +82,8 @@ Docker daemon binary and related utilities
 %package client
 Summary: Docker client binary and related utilities
 
-Requires:      /bin/sh
+Requires: /bin/sh
+Requires: %{name}-engine = %{version}-%{release}
 BuildRequires: libtool-ltdl-devel
 
 %description client
@@ -87,9 +92,9 @@ Docker client binary and related utilities
 %prep
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
+%patch0000 -p1
 %patch0001 -p1
 %setup -q -T -n %{_source_docker_init} -b 2
-%setup -q -T -n %{_source_docker_proxy} -b 3
 
 %build
 export GO111MODULE=off
@@ -105,17 +110,6 @@ popd
 pushd %{_builddir}/%{_source_docker_init}
 cmake .
 make tini-static
-popd
-
-# build docker-proxy
-pushd %{_builddir}/%{_source_docker_proxy}
-mkdir -p .gopath/src/github.com/docker/libnetwork
-export GOPATH=`pwd`/.gopath
-rm -rf .gopath/src/github.com/docker/libnetwork
-ln -s %{_builddir}/%{_source_docker_proxy} .gopath/src/github.com/docker/libnetwork
-pushd .gopath/src/github.com/docker/libnetwork
-go build -buildmode=pie -ldflags=-linkmode=external -o docker-proxy github.com/docker/libnetwork/cmd/proxy
-popd
 popd
 
 # build cli
@@ -143,14 +137,17 @@ ver="$(%{_builddir}/%{_source_client}/build/docker --version)"; \
 install -D -p -m 0755 $(readlink -f %{_builddir}/%{_source_engine}/bundles/dynbinary-daemon/dockerd) %{buildroot}%{_bindir}/dockerd
 
 # install proxy
-install -D -p -m 0755 %{_builddir}/%{_source_docker_proxy}/docker-proxy %{buildroot}%{_bindir}/docker-proxy
+install -D -p -m 0755 /usr/bin/docker-proxy %{buildroot}%{_bindir}/docker-proxy
 
 # install tini
 install -D -p -m 755 %{_builddir}/%{_source_docker_init}/tini-static %{buildroot}%{_bindir}/docker-init
 
 # install systemd scripts
-install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/docker.service
-install -D -m 0644 %{SOURCE5} %{buildroot}%{_unitdir}/docker.socket
+install -D -m 0644 %{SOURCE3} %{buildroot}%{_unitdir}/docker.service
+install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/docker.socket
+
+# for additional args
+install -Dpm 644 %{SOURCE5} %{buildroot}%{_sysconfdir}/sysconfig/docker
 
 # install docker client
 install -p -m 0755 $(readlink -f %{_builddir}/%{_source_client}/build/docker) %{buildroot}%{_bindir}/docker
@@ -171,6 +168,7 @@ install -p -m 644 %{_builddir}/%{_source_client}/{LICENSE,MAINTAINERS,NOTICE,REA
 # empty as it depends on engine and client
 
 %files engine
+%config(noreplace) %{_sysconfdir}/sysconfig/docker
 %{_bindir}/dockerd
 %{_bindir}/docker-proxy
 %{_bindir}/docker-init
@@ -191,13 +189,16 @@ if ! getent group docker > /dev/null; then
 fi
 
 %preun
-%systemd_preun docker.service
+%systemd_preun docker.service docker.socket
 
 %postun
 %systemd_postun_with_restart docker.service
 
 %changelog
-* Wed Dec 21 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-2
+* Fri Nov 17 2023 shechenglong<shechenglong@xfusion.com> - 20.10.24-1
+- DESC: sync to openEuler-23.09 branch
+
+* Wed Dec 21 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-3
 - DESC: change to BuildRequires golang-1.17
 
 * Wed Dec 21 2022 wanglimin<wanglimin@xfusion.com> - 20.10.21-2
