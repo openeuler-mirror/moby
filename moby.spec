@@ -7,7 +7,7 @@
 
 Name: 	  moby
 Version:  20.10.24
-Release:  6
+Release:  7
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
@@ -44,7 +44,7 @@ Summary: Docker daemon binary and related utilities
 Requires: /usr/sbin/groupadd
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
-Requires: docker-runc
+Requires: runc
 Requires: container-selinux >= 2:2.74
 Requires: libseccomp >= 2.3
 Requires: systemd
@@ -195,6 +195,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Thu Dec 28 2023 maokecheng<maokecheng@xfusion.com> - 20.10.24-7
+- Adapt docker-runc to be changed to runc
+
 * Tue Sep 26 2023 xulei<xulei@xfusion.com> - 20.10.24-6
 - Fix the missing socketGroup permissions for only installing moby-engine
 
