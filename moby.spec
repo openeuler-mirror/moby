@@ -1,28 +1,25 @@
-%global _gitcommit_engine 5d6db84
-%global _gitcommit_cli 297e128
+%global _gitcommit_engine f417435 
+%global _gitcommit_cli 4debf41
 %global _source_engine moby-%{version}
 %global _source_client cli-%{version}
 %global _source_docker_init tini-0.19.0
 %define _debugsource_template %{nil}
 
 Name: 	  moby
-Version:  20.10.24
-Release:  7
+Version:  25.0.3
+Release:  1
 Summary:  The open-source application container engine
 License:  ASL 2.0
 URL:	  https://www.docker.com
-# https://github.com/docker/cli/archive/refs/tags/v20.10.24.tar.gz
+# https://github.com/docker/cli/archive/refs/tags/v25.0.3.tar.gz
 Source0:  cli-%{version}.tar.gz
-# https://github.com/moby/moby/archive/refs/tags/v20.10.24.tar.gz
+# https://github.com/moby/moby/archive/refs/tags/v25.0.3.tar.gz
 Source1:  moby-%{version}.tar.gz
 # https://github.com/krallin/tini/archive/refs/tags/v0.19.0.tar.gz
 Source2:  tini-0.19.0.tar.gz
 Source3:  docker.service
 Source4:  docker.socket
 Source5:  docker.sysconfig
-Patch0000:  awslogs-fix-non-blocking-log-drop-bug.patch
-Patch0001:  daemon-prepare-MountPoints-fix-panic-if-mount.patch
-
 
 Requires: %{name}-engine = %{version}-%{release}
 Requires: %{name}-client = %{version}-%{release}
@@ -92,8 +89,6 @@ Docker client binary and related utilities
 %prep
 %setup -q -n %{_source_client}
 %setup -q -T -n %{_source_engine} -b 1
-%patch0000 -p1
-%patch0001 -p1
 %setup -q -T -n %{_source_docker_init} -b 2
 
 %build
@@ -195,6 +190,9 @@ fi
 %systemd_postun_with_restart docker.service
 
 %changelog
+* Tue Feb 06 2024 shechenglong<shechenglong@xfusion.com> - 25.0.3-1
+- DESC:update to 25.0.3
+
 * Thu Dec 28 2023 maokecheng<maokecheng@xfusion.com> - 20.10.24-7
 - Adapt docker-runc to be changed to runc
 
